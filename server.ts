@@ -135,16 +135,10 @@ async function startServer() {
         return;
       }
 
-      if (!body.resume || !body.resume.base64Data || !body.resume.fileName) {
-        res.status(400).json({
-          status: 'error',
-          message: 'Please attach your Resume / CV (PDF, DOC, or DOCX) to complete your application.',
-        });
-        return;
-      }
-
       const applicationId = generateApplicationId();
       const submittedAt = new Date().toISOString();
+
+      const hasUploadedResume = Boolean(body.resume && body.resume.base64Data && body.resume.fileName);
 
       const newRecord: StoredInternApplication = {
         id: applicationId,
@@ -176,12 +170,16 @@ async function startServer() {
           ? body.preferredSlots.map((s: unknown) => String(s))
           : [],
         consentConfirmed: Boolean(body.consentConfirmed),
-        resume: {
-          fileName: String(body.resume.fileName),
-          mimeType: String(body.resume.mimeType || 'application/pdf'),
-          sizeBytes: Number(body.resume.sizeBytes || 0),
-          base64Data: String(body.resume.base64Data),
-        },
+        ...(hasUploadedResume
+          ? {
+              resume: {
+                fileName: String(body.resume.fileName),
+                mimeType: String(body.resume.mimeType || 'application/pdf'),
+                sizeBytes: Number(body.resume.sizeBytes || 0),
+                base64Data: String(body.resume.base64Data),
+              },
+            }
+          : {}),
       };
 
       // Optional Google Apps Script forwarding if configured
@@ -214,11 +212,14 @@ async function startServer() {
             startDate: newRecord.startDate,
             trainingAvailability: newRecord.preferredSlots,
             consentConfirm: newRecord.consentConfirmed,
-            resume: {
-              fileName: newRecord.resume?.fileName,
-              mimeType: newRecord.resume?.mimeType,
-              data: newRecord.resume?.base64Data,
-            },
+            resumeSubmissionMode: 'WhatsApp: 9404905336',
+            resume: newRecord.resume
+              ? {
+                  fileName: newRecord.resume.fileName,
+                  mimeType: newRecord.resume.mimeType,
+                  data: newRecord.resume.base64Data,
+                }
+              : null,
           };
 
           const webhookRes = await fetch(settings.appsScriptUrl, {

@@ -37,8 +37,8 @@ export interface InternApplicationFormData {
   projectDescription: string;
   reasonToJoin: string;
 
-  // Step 4: Resume, Joining Timeline & Consent
-  resume: UploadedResumePayload | null;
+  // Step 4: WhatsApp Resume, Joining Timeline & Consent
+  whatsappResumeConfirmed: boolean;
   startDate: string;
   preferredSlots: string[];
   consentConfirmed: boolean;

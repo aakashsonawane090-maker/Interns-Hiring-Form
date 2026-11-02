@@ -357,7 +357,7 @@ export function PortalModal({ isOpen, initialTab, onClose }: PortalModalProps) {
                     Data Analyst Intern Applications
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Review intern applicants, download resumes, update screening stages, or export to Excel / Google Sheets.
+                    Review intern applicants, update screening stages, or export to Excel / Google Sheets. Resumes are received on WhatsApp (9404905336).
                   </p>
                 </div>
 
@@ -510,7 +510,7 @@ export function PortalModal({ isOpen, initialTab, onClose }: PortalModalProps) {
                               >
                                 {selectedCandidate?.id === app.id ? 'Hide' : 'Details'}
                               </button>
-                              {app.resumeMeta && (
+                              {app.resumeMeta ? (
                                 <a
                                   href={`/api/applications/${encodeURIComponent(app.id)}/resume`}
                                   download={app.resumeMeta.fileName}
@@ -519,6 +519,10 @@ export function PortalModal({ isOpen, initialTab, onClose }: PortalModalProps) {
                                   <Download className="w-3.5 h-3.5" />
                                   <span>CV</span>
                                 </a>
+                              ) : (
+                                <span className="inline-block px-2 py-1 text-[11px] font-medium text-emerald-700">
+                                  WA Resume
+                                </span>
                               )}
                             </td>
                           </tr>

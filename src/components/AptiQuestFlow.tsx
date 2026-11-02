@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FileText,
   Loader2,
+  MessageCircle,
   ShieldAlert,
   X,
 } from 'lucide-react';
@@ -54,6 +55,21 @@ export function AptiQuestFlow({
 
   const tenDigitMobile = extractTenDigitMobile(receipt.mobileNumber);
   const batchIdentifier = `${receipt.applicationId} - ${receipt.highestQualification || 'Data Analyst Intern'}`;
+
+  const whatsappResumeWithIdUrl = `https://wa.me/919404905336?text=${encodeURIComponent(
+    [
+      'Hello HR Team (AI Institute Satana × Grambytes Nexus Pvt. Ltd.),',
+      'I have submitted my online application for *Data Analyst Interns – 2026*.',
+      '',
+      `*Application ID:* ${receipt.applicationId}`,
+      `*Full Name:* ${receipt.applicantName}`,
+      `*Mobile:* ${tenDigitMobile}`,
+      `*Email:* ${receipt.email}`,
+      `*Qualification:* ${receipt.highestQualification || '-'}`,
+      '',
+      'Please find my *Resume / CV* attached below.',
+    ].join('\n')
+  )}`;
 
   const handleCopy = async (label: string, text: string) => {
     try {
@@ -134,6 +150,15 @@ export function AptiQuestFlow({
         </div>
 
         <div className="pt-2 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3">
+          <a
+            href={whatsappResumeWithIdUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-colors whitespace-nowrap shrink-0 tabular-nums"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Send Resume on WhatsApp (9404905336)</span>
+          </a>
           <button
             type="button"
             onClick={onDownloadReceipt}
@@ -179,7 +204,16 @@ export function AptiQuestFlow({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <a
+              href={whatsappResumeWithIdUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors whitespace-nowrap shrink-0 tabular-nums"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>WhatsApp Resume (9404905336)</span>
+            </a>
             <button
               type="button"
               onClick={onDownloadReceipt}

@@ -5,11 +5,10 @@ import {
   ArrowRight,
   CheckCircle2,
   Code2,
-  FileText,
+  ExternalLink,
   GraduationCap,
   Loader2,
-  Trash2,
-  UploadCloud,
+  MessageCircle,
   User,
 } from 'lucide-react';
 import { HIRING_CONFIG } from '../config/hiringConfig';
@@ -39,17 +38,11 @@ const INITIAL_FORM_DATA: InternApplicationFormData = {
   portfolioUrl: '',
   projectDescription: '',
   reasonToJoin: '',
-  resume: null,
+  whatsappResumeConfirmed: false,
   startDate: '',
   preferredSlots: [],
   consentConfirmed: false,
 };
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
 
 export function InternApplicationForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(FormStep.PersonalDetails);
@@ -58,7 +51,6 @@ export function InternApplicationForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [receipt, setReceipt] = useState<SubmissionReceipt | null>(() => {
     try {
       const saved = sessionStorage.getItem('ais_2026_active_receipt');
@@ -69,7 +61,6 @@ export function InternApplicationForm() {
   });
 
   const formCardRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const clearFieldError = (field: string) => {
     setErrors((prev) => {
@@ -169,8 +160,9 @@ export function InternApplicationForm() {
         nextErrors.reasonToJoin = 'Please write a short note on why you want to join this program.';
       }
     } else if (step === FormStep.ResumeAndSubmit) {
-      if (!formData.resume) {
-        nextErrors.resume = 'Please upload your Resume / CV (PDF, DOC, or DOCX up to 10 MB).';
+      if (!formData.whatsappResumeConfirmed) {
+        nextErrors.whatsappResumeConfirmed =
+          'Please click the WhatsApp button to send your Resume to 9404905336 and confirm the checkbox.';
       }
       if (!formData.startDate) {
         nextErrors.startDate = 'Please select when you can join.';
@@ -219,62 +211,22 @@ export function InternApplicationForm() {
     }
   };
 
-  const processResumeFile = (file: File) => {
-    const allowedExtensions = ['.pdf', '.doc', '.docx'];
-    const lowerName = file.name.toLowerCase();
-    const isValidExt = allowedExtensions.some((ext) => lowerName.endsWith(ext));
+  const buildWhatsappResumeUrl = () => {
+    const messageLines = [
+      'Hello HR Team (AI Institute Satana × Grambytes Nexus Pvt. Ltd.),',
+      'I am applying for the *Data Analyst Interns – 2026 (3-Month Work From Home Program)*.',
+      '',
+      `*Full Name:* ${formData.fullName.trim() || 'Candidate'}`,
+      `*Mobile:* ${formData.mobileNumber.trim() || '-'}`,
+      `*Email:* ${formData.email.trim() || '-'}`,
+      `*Location:* ${formData.location.trim() || '-'}`,
+      `*Qualification:* ${formData.highestQualification.trim() || '-'} (${formData.collegeName.trim() || '-'}, ${formData.graduationYear || '-'})`,
+      `*Skills:* ${formData.technicalTools.length > 0 ? formData.technicalTools.join(', ') : '-'}`,
+      '',
+      'Please find my *Resume / CV* attached below.',
+    ].join('\n');
 
-    if (!isValidExt) {
-      setErrors((prev) => ({
-        ...prev,
-        resume: 'Invalid file format. Please upload a PDF, DOC, or DOCX file.',
-      }));
-      return;
-    }
-
-    const maxBytes = 10 * 1024 * 1024; // 10 MB
-    if (file.size > maxBytes) {
-      setErrors((prev) => ({
-        ...prev,
-        resume: 'File exceeds the 10 MB limit. Please upload a smaller PDF or DOCX.',
-      }));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || '');
-      const base64Data = result.includes(',') ? result.split(',')[1] : result;
-      updateField('resume', {
-        fileName: file.name,
-        mimeType: file.type || 'application/pdf',
-        sizeBytes: file.size,
-        base64Data,
-      });
-    };
-    reader.onerror = () => {
-      setErrors((prev) => ({
-        ...prev,
-        resume: 'Unable to read the selected file. Please try selecting it again.',
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processResumeFile(file);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDraggingFile(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      processResumeFile(file);
-    }
+    return `https://wa.me/919404905336?text=${encodeURIComponent(messageLines)}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -343,10 +295,11 @@ export function InternApplicationForm() {
       `Special Launch Offer     : ₹4,999/- (All-Inclusive Fee | First 100 Students)`,
       `Submitted Timestamp      : ${new Date(receipt.submittedAt).toLocaleString()}`,
       `Current Status           : Submitted — Under Screening`,
+      `Resume Submission        : Send Resume on WhatsApp to 9404905336`,
       '------------------------------------------------------------',
       `Keep your Reference ID (${receipt.applicationId}) safe to track your application status.`,
       `WhatsApp Support : ${HIRING_CONFIG.contact.whatsappDisplay}`,
-      `Resume Desk      : ${HIRING_CONFIG.contact.resumeWhatsappDisplay}`,
+      `Send Resume WA   : 9404905336`,
       `Website          : ${HIRING_CONFIG.contact.websiteDisplay}`,
       '============================================================',
     ].join('\n');
@@ -366,7 +319,7 @@ export function InternApplicationForm() {
     { step: FormStep.PersonalDetails, label: '1. Personal Info', icon: User },
     { step: FormStep.EducationAndPreferences, label: '2. Education & Program', icon: GraduationCap },
     { step: FormStep.SkillsAndProjects, label: '3. Skills & Goals', icon: Code2 },
-    { step: FormStep.ResumeAndSubmit, label: '4. Resume & Submit', icon: CheckCircle2 },
+    { step: FormStep.ResumeAndSubmit, label: '4. WhatsApp Resume & Submit', icon: CheckCircle2 },
   ];
 
   const progressPercentage = (currentStep / 4) * 100;
@@ -460,7 +413,7 @@ export function InternApplicationForm() {
                   <div className="absolute inset-0 bg-white/90 backdrop-blur-xs z-20 flex flex-col items-center justify-center p-6 text-center space-y-3">
                     <Loader2 className="w-9 h-9 text-blue-700 animate-spin" />
                     <p className="text-base font-bold text-slate-900">Submitting Your Application...</p>
-                    <p className="text-xs text-slate-500">Uploading your resume and registering your spot.</p>
+                    <p className="text-xs text-slate-500">Registering your spot and preparing your AptiQuest instructions.</p>
                   </div>
                 )}
 
@@ -962,87 +915,76 @@ export function InternApplicationForm() {
                   </div>
                 )}
 
-                {/* STEP 4: RESUME UPLOAD, AVAILABILITY & FINAL DECLARATION */}
+                {/* STEP 4: SEND RESUME ON WHATSAPP, AVAILABILITY & FINAL DECLARATION */}
                 {currentStep === FormStep.ResumeAndSubmit && (
                   <div className="space-y-6">
                     <div className="border-b border-slate-200 pb-3 flex items-center gap-2.5">
                       <CheckCircle2 className="w-5 h-5 text-blue-700 shrink-0" />
-                      <h3 className="text-lg font-bold text-slate-900">Step 4: Resume Upload &amp; Secure Your Spot</h3>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Step 4: Send Resume on WhatsApp &amp; Secure Your Spot
+                      </h3>
                     </div>
 
-                    {/* Resume / CV Dropzone */}
+                    {/* Send Resume via WhatsApp Card (Replaces File Upload) */}
                     <div className="space-y-2">
                       <span className="block text-sm font-semibold text-slate-800">
-                        Upload Your Resume / CV <span className="text-rose-600">*</span>
+                        Send Your Resume / CV on WhatsApp <span className="text-rose-600">*</span>
                       </span>
 
-                      {!formData.resume ? (
-                        <div
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setIsDraggingFile(true);
-                          }}
-                          onDragLeave={() => setIsDraggingFile(false)}
-                          onDrop={handleDrop}
-                          onClick={() => fileInputRef.current?.click()}
-                          className={`border-2 border-dashed rounded-2xl p-7 text-center cursor-pointer transition-colors ${
-                            isDraggingFile
-                              ? 'border-blue-700 bg-blue-50/60'
-                              : errors.resume
-                                ? 'border-rose-400 bg-rose-50/30'
-                                : 'border-slate-300 hover:border-blue-600 bg-slate-50/50'
-                          }`}
-                        >
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".pdf,.doc,.docx"
-                            onChange={handleFileChange}
-                            className="sr-only"
-                          />
-                          <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 text-blue-700 flex items-center justify-center mx-auto mb-3">
-                            <UploadCloud className="w-6 h-6" />
-                          </div>
-                          <p className="text-sm font-semibold text-slate-800">
-                            <span className="text-blue-700 underline underline-offset-2">Click to choose file</span> or drag and drop here
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            Accepted formats: PDF, DOC, DOCX · Maximum size 10 MB
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                              <FileText className="w-5 h-5" />
+                      <div
+                        className={`rounded-2xl border p-6 space-y-4 transition-colors ${
+                          errors.whatsappResumeConfirmed
+                            ? 'border-rose-400 bg-rose-50/30'
+                            : 'border-emerald-200 bg-emerald-50/50'
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-start gap-3.5">
+                            <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                              <MessageCircle className="w-5 h-5" />
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-900 truncate">
-                                {formData.resume.fileName}
+                            <div>
+                              <p className="text-sm sm:text-base font-bold text-slate-900">
+                                WhatsApp Your Resume to:{' '}
+                                <span className="font-mono text-emerald-800 tabular-nums">9404905336</span>
                               </p>
-                              <p className="text-xs text-slate-600 tabular-nums">
-                                {formatBytes(formData.resume.sizeBytes)} · Ready to submit
+                              <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                                Click the button below to open WhatsApp with your application details pre-filled, then attach and send your Resume PDF/DOC to <strong className="text-slate-900 tabular-nums">+91 94049 05336</strong>.
                               </p>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              updateField('resume', null);
-                              if (fileInputRef.current) fileInputRef.current.value = '';
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors shrink-0"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Remove</span>
-                          </button>
-                        </div>
-                      )}
 
-                      {errors.resume && (
+                          <a
+                            href={buildWhatsappResumeUrl()}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => updateField('whatsappResumeConfirmed', true)}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm transition-colors whitespace-nowrap shrink-0 tabular-nums"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>Send Resume on WhatsApp (9404905336)</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+
+                        <label className="flex items-start gap-3 pt-3 border-t border-emerald-200/80 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.whatsappResumeConfirmed}
+                            onChange={(e) => updateField('whatsappResumeConfirmed', e.target.checked)}
+                            className="w-4 h-4 accent-emerald-700 rounded mt-0.5 shrink-0"
+                          />
+                          <span className="text-xs sm:text-sm font-medium text-slate-800 leading-relaxed">
+                            I have sent (or am sending) my Resume / CV on WhatsApp to{' '}
+                            <strong className="font-mono text-slate-900 tabular-nums">9404905336</strong> along with my full name and mobile number.
+                          </span>
+                        </label>
+                      </div>
+
+                      {errors.whatsappResumeConfirmed && (
                         <p role="alert" className="text-xs text-rose-600 flex items-center gap-1 mt-1">
                           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{errors.resume}</span>
+                          <span>{errors.whatsappResumeConfirmed}</span>
                         </p>
                       )}
                     </div>
